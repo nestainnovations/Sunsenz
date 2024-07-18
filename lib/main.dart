@@ -42,10 +42,12 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Image.asset('assets/Logo-RBG.png', 
+        child: Image.asset(
+          'assets/Logo-RBG.png',
           fit: BoxFit.contain, // Ensure the image scales properly
           width: double.infinity, // Make the image fit the width
-          height: double.infinity,),
+          height: double.infinity,
+        ),
       ),
     );
   }
@@ -77,27 +79,43 @@ class _HomeScreenState extends State<HomeScreen> {
       ..loadRequest(Uri.parse('https://service.sunsenz.com/public/en/member/login'));
   }
 
+  Future<bool> _onWillPop() async {
+    if (await _controller.canGoBack()) {
+      _controller.goBack();
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Center(
-          child: Text(
-            'Sunsenz Service',
-            style: TextStyle(
-              fontWeight: FontWeight.bold, // Make the text bold
-              fontSize: 24, // Increase the font size
-              color: Colors.white, // Change the text color to white
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Center(
+            child: Text(
+              'Sunsenz Service',
+              style: TextStyle(
+                fontWeight: FontWeight.bold, // Make the text bold
+                fontSize: 24, // Increase the font size
+                color: Colors.white, // Change the text color to white
+              ),
             ),
           ),
+          backgroundColor: const Color(0xFFD91818), // Change the AppBar background color to #D91818
         ),
-        backgroundColor: const Color(0xFFD91818), // Change the AppBar background color to #D91818
-      ),
-      body: Stack(
-        children: [
-          WebViewWidget(controller: _controller),
-          _isLoading ? Center(child: CircularProgressIndicator(color: Color(0xFF119E3E))) : SizedBox.shrink(),
-        ],
+        body: Stack(
+          children: [
+            WebViewWidget(controller: _controller),
+            _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF119E3E)),
+                  )
+                : SizedBox.shrink(),
+          ],
+        ),
       ),
     );
   }
