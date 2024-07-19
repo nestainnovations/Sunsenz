@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(SunsenzServeApp());
@@ -74,9 +75,30 @@ class _HomeScreenState extends State<HomeScreen> {
               _isLoading = false;
             });
           },
+          onNavigationRequest: (NavigationRequest request) {
+            if (_shouldLaunchInExternalApp(request.url)) {
+              _launchURL(request.url);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
         ),
       )
-      ..loadRequest(Uri.parse('https://service.sunsenz.com/public/en/member/login'));
+      ..loadRequest(Uri.parse('https://test.sunsenz.com/public/en/member/login'));
+  }
+
+  bool _shouldLaunchInExternalApp(String url) {
+    // Define the schemes and URLs that should be handled externally
+    final externalSchemes = ['tel:', 'mailto:', 'https://maps.app.goo.gl/', 'http://maps.app.goo.gl/'];
+    return externalSchemes.any((scheme) => url.startsWith(scheme));
+  }
+
+  Future<void> _launchURL(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      print('Could not launch $url');
+    }
   }
 
   Future<bool> _onWillPop() async {
