@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_webview_pro/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 void main() {
@@ -45,8 +45,8 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Center(
         child: Image.asset(
           'assets/Logo-RBG.png',
-          fit: BoxFit.contain, // Ensure the image scales properly
-          width: double.infinity, // Make the image fit the width
+          fit: BoxFit.contain,
+          width: double.infinity,
           height: double.infinity,
         ),
       ),
@@ -66,29 +66,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageFinished: (String url) {
-            setState(() {
-              _isLoading = false;
-            });
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            if (_shouldLaunchInExternalApp(request.url)) {
-              _launchURL(request.url);
-              return NavigationDecision.prevent;
-            }
-            return NavigationDecision.navigate;
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse('https://test.sunsenz.com/public/en/member/login'));
+  }
+
+  void _onWebViewCreated(WebViewController controller) {
+    _controller = controller;
+    _controller.loadUrl('https://test.sunsenz.com/public/en/member/login');
   }
 
   bool _shouldLaunchInExternalApp(String url) {
-    // Define the schemes and URLs that should be handled externally
     final externalSchemes = ['tel:', 'mailto:', 'https://maps.app.goo.gl/', 'http://maps.app.goo.gl/'];
     return externalSchemes.any((scheme) => url.startsWith(scheme));
   }
@@ -120,17 +105,33 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(
               'Sunsenz Service',
               style: TextStyle(
-                fontWeight: FontWeight.bold, // Make the text bold
-                fontSize: 24, // Increase the font size
-                color: Colors.white, // Change the text color to white
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                color: Colors.white,
               ),
             ),
           ),
-          backgroundColor: const Color(0xFFD91818), // Change the AppBar background color to #D91818
+          backgroundColor: const Color(0xFFD91818),
         ),
         body: Stack(
           children: [
-            WebViewWidget(controller: _controller),
+            WebView(
+              initialUrl: 'https://test.sunsenz.com/public/en/member/login',
+              javascriptMode: JavascriptMode.unrestricted,
+              onWebViewCreated: _onWebViewCreated,
+              onPageFinished: (String url) {
+                setState(() {
+                  _isLoading = false;
+                });
+              },
+              navigationDelegate: (NavigationRequest request) {
+                if (_shouldLaunchInExternalApp(request.url)) {
+                  _launchURL(request.url);
+                  return NavigationDecision.prevent;
+                }
+                return NavigationDecision.navigate;
+              },
+            ),
             _isLoading
                 ? Center(
                     child: CircularProgressIndicator(color: Color(0xFF119E3E)),
