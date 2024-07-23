@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
         appBar: AppBar(
           title: const Center(
             child: Text(
-              'Sunsenz Service',
+              'Moopens Service',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 24,
