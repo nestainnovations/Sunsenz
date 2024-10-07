@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_webview_pro/webview_flutter.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       body: Center(
         child: Image.asset(
-          'assets/Logo-RBG.png',
+          'assets/Logo-RBG.png', // Replace with your actual logo path
           fit: BoxFit.contain,
           width: double.infinity,
           height: double.infinity,
@@ -62,7 +62,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final WebViewController _controller;
+  late InAppWebViewController _controller;
   bool _isLoading = true;
   bool _hasInternet = true;
   late StreamSubscription<ConnectivityResult> _connectivitySubscription;
@@ -72,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _checkInternetConnection();
 
-    // Listen for real-time changes in internet connection
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       if (result == ConnectivityResult.none) {
         setState(() {
@@ -81,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         setState(() {
           _hasInternet = true;
-          _controller.reload(); // Reload the web page when connection is restored
+          _controller.reload();
         });
       }
     });
@@ -91,18 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _connectivitySubscription.cancel();
     super.dispose();
-  }
-
-  void _onWebViewCreated(WebViewController controller) {
-    _controller = controller;
-    _controller.loadUrl(
-      'https://service.sunsenz.com/public/en/member/login',
-      headers: {
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache",
-        "Expires": "0",
-      },
-    );
   }
 
   Future<void> _checkInternetConnection() async {
@@ -116,19 +103,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _hasInternet = true;
       });
     }
-  }
-
-  void _retryConnection() async {
-    setState(() {
-      _isLoading = true;
-    });
-    await _checkInternetConnection();
-    if (_hasInternet) {
-      _controller.reload();
-    }
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   bool _shouldLaunchInExternalApp(String url) {
@@ -174,26 +148,43 @@ class _HomeScreenState extends State<HomeScreen> {
         body: _hasInternet
             ? Stack(
                 children: [
-                  WebView(
-                    initialUrl: 'https://service.sunsenz.com/public/en/member/login',
-                    javascriptMode: JavascriptMode.unrestricted,
-                    onWebViewCreated: _onWebViewCreated,
-                    onPageStarted: (String url) {
+                  InAppWebView(
+                    initialUrlRequest: URLRequest(
+                      url: WebUri('https://service.sunsenz.com/public/en/member/login'),
+                      headers: {
+                        "Cache-Control": "no-cache",
+                        "Pragma": "no-cache",
+                        "Expires": "0",
+                      },
+                    ),
+                    initialSettings: InAppWebViewSettings(
+                      useShouldOverrideUrlLoading: true,
+                      cacheEnabled: true,
+                      javaScriptEnabled: true,
+                      clearCache: false,
+                      useOnDownloadStart: true,
+                      transparentBackground: true,
+                    ),
+                    onWebViewCreated: (controller) {
+                      _controller = controller;
+                    },
+                    shouldOverrideUrlLoading: (controller, navigationAction) async {
+                      var url = navigationAction.request.url.toString();
+                      if (_shouldLaunchInExternalApp(url)) {
+                        _launchURL(url);
+                        return NavigationActionPolicy.CANCEL;
+                      }
+                      return NavigationActionPolicy.ALLOW;
+                    },
+                    onLoadStart: (controller, url) {
                       setState(() {
                         _isLoading = true;
                       });
                     },
-                    onPageFinished: (String url) {
+                    onLoadStop: (controller, url) async {
                       setState(() {
                         _isLoading = false;
                       });
-                    },
-                    navigationDelegate: (NavigationRequest request) {
-                      if (_shouldLaunchInExternalApp(request.url)) {
-                        _launchURL(request.url);
-                        return NavigationDecision.prevent;
-                      }
-                      return NavigationDecision.navigate;
                     },
                   ),
                   _isLoading
@@ -219,24 +210,14 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(height: 20),
           Text(
             'No Internet Connection',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+            style: TextStyle(fontSize: 24, color: Colors.black),
           ),
           SizedBox(height: 10),
-          Text(
-            'Please check your connection and try again.',
-            style: TextStyle(fontSize: 18, color: Colors.black54),
-          ),
-          SizedBox(height: 30),
-          ElevatedButton.icon(
-            onPressed: _retryConnection,
-            icon: Icon(Icons.refresh),
-            label: Text('Retry'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-              textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+          ElevatedButton(
+            onPressed: () {
+              _checkInternetConnection();
+            },
+            child: Text('Retry'),
           ),
         ],
       ),
