@@ -210,14 +210,26 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(height: 20),
           Text(
             'No Internet Connection',
-            style: TextStyle(fontSize: 24, color: Colors.black),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
           ),
           SizedBox(height: 10),
-          ElevatedButton(
+          Text(
+            'Please check your connection and try again.',
+            style: TextStyle(fontSize: 18, color: Colors.black54),
+          ),
+          SizedBox(height: 30),
+          ElevatedButton.icon(
             onPressed: () {
-              _checkInternetConnection();
+              _checkInternetConnection(); // Check connectivity again
             },
-            child: Text('Retry'),
+            icon: Icon(Icons.refresh),
+            label: Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+              textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
