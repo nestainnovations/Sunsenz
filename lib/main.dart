@@ -3,6 +3,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
+import 'package:new_version_plus/new_version_plus.dart';
 
 void main() {
   runApp(SunsenzServeApp());
@@ -30,15 +31,36 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToHome();
+    _checkVersion();
   }
 
-  _navigateToHome() async {
-    await Future.delayed(Duration(milliseconds: 3000), () {});
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => HomeScreen()),
-    );
+  void _checkVersion() async {
+    final newVersion = NewVersionPlus(androidId: "in.sunsenz.service"); // Replace with your app's package name
+    final status = await newVersion.getVersionStatus();
+
+    if (status != null && status.canUpdate) {
+      newVersion.showUpdateDialog(
+        context: context,
+        versionStatus: status,
+        dialogTitle: 'Update Available',
+        dialogText: 'A new version of the app is available! Please update to continue.',
+        updateButtonText: 'Update Now',
+        dismissButtonText: 'Later',
+        dismissAction: () {
+          _navigateToHome();
+        },
+      );
+    } else {
+      _navigateToHome();
+    }
+  }
+
+  void _navigateToHome() {
+    Timer(Duration(seconds: 3), () {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
+    });
   }
 
   @override

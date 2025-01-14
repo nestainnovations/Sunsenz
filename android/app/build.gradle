@@ -23,9 +23,13 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.sunsenz"
-    compileSdk 34
-    ndkVersion flutter.ndkVersion
+    namespace "com.sunsenz.service"
+    compileSdk 35
+    ndkVersion "27.0.12077973"
+
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -45,8 +49,8 @@ android {
         applicationId "in.sunsenz.service"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 34
+        minSdkVersion 21
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
