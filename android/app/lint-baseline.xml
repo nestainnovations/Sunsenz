@@ -2,17 +2,6 @@
 <issues format="6" by="lint 8.7.3" type="baseline" client="gradle" dependencies="false" name="AGP (8.7.3)" variant="all" version="8.7.3">
 
     <issue
-        id="ScopedStorage"
-        message="READ_EXTERNAL_STORAGE is deprecated (and is not granted) when targeting Android 13+. If you need to query or interact with MediaStore or media files on the shared storage, you should instead use one or more new storage permissions: `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO` or `READ_MEDIA_AUDIO`."
-        errorLine1="    &lt;uses-permission android:name=&quot;android.permission.READ_EXTERNAL_STORAGE&quot; />"
-        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/AndroidManifest.xml"
-            line="3"
-            column="36"/>
-    </issue>
-
-    <issue
         id="NewApi"
         message="`android:forceDarkAllowed` requires API level 29 (current min is 21)"
         errorLine1="        &lt;item name=&quot;android:forceDarkAllowed&quot;>false&lt;/item>"
@@ -54,17 +43,6 @@
             file="src/main/res/values/styles.xml"
             line="11"
             column="15"/>
-    </issue>
-
-    <issue
-        id="SelectedPhotoAccess"
-        message="Your app is currently not handling Selected Photos Access introduced in Android 14+"
-        errorLine1="    &lt;uses-permission android:name=&quot;android.permission.READ_MEDIA_IMAGES&quot;/>"
-        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/AndroidManifest.xml"
-            line="4"
-            column="36"/>
     </issue>
 
     <issue

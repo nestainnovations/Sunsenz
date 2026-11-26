@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
+import 'package:file_selector/file_selector.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:new_version_plus/new_version_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 void main() {
   runApp(const SunsenzServeApp());
@@ -138,6 +142,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initializeWebView() async {
+    final platformController = _controller.platform;
+    if (platformController is AndroidWebViewController) {
+      await platformController.setOnShowFileSelector(_handleFileSelector);
+    }
     await _controller.setJavaScriptMode(JavaScriptMode.unrestricted);
     await _controller.setBackgroundColor(Colors.transparent);
     await _controller.setNavigationDelegate(
@@ -178,6 +186,68 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _isWebViewReady = true;
       });
+    }
+  }
+
+  Future<List<String>> _handleFileSelector(FileSelectorParams params) async {
+    final acceptedTypes = params.acceptTypes
+        .map((type) => type.toLowerCase().trim())
+        .toList();
+    final acceptsImages = acceptedTypes.any(
+      (type) =>
+          type.startsWith('image/') ||
+          RegExp(r'\.(jpe?g|png|gif|webp|heic|heif|bmp|tiff?)$').hasMatch(type),
+    );
+    final acceptsVideos = acceptedTypes.any(
+      (type) =>
+          type.startsWith('video/') ||
+          RegExp(r'\.(mp4|m4v|mov|avi|mkv|webm|3gp)$').hasMatch(type),
+    );
+    final picker = ImagePicker();
+
+    try {
+      if (acceptsImages && acceptsVideos) {
+        if (params.mode == FileSelectorMode.openMultiple) {
+          final files = await picker.pickMultipleMedia();
+          return files.map((file) => file.path).toList();
+        }
+        final file = await picker.pickMedia();
+        return file == null ? const [] : [file.path];
+      }
+
+      if (acceptsImages) {
+        if (params.isCaptureEnabled) {
+          final file = await picker.pickImage(source: ImageSource.camera);
+          return file == null ? const [] : [file.path];
+        }
+        if (params.mode == FileSelectorMode.openMultiple) {
+          final files = await picker.pickMultiImage();
+          return files.map((file) => file.path).toList();
+        }
+        final file = await picker.pickImage(source: ImageSource.gallery);
+        return file == null ? const [] : [file.path];
+      }
+
+      if (acceptsVideos) {
+        if (params.mode == FileSelectorMode.openMultiple &&
+            !params.isCaptureEnabled) {
+          final files = await picker.pickMultiVideo();
+          return files.map((file) => file.path).toList();
+        }
+        final file = await picker.pickVideo(
+          source: params.isCaptureEnabled
+              ? ImageSource.camera
+              : ImageSource.gallery,
+        );
+        return file == null ? const [] : [file.path];
+      }
+
+      final files = await openFiles();
+      return files.map((file) => file.path).toList();
+    } on PlatformException catch (error, stackTrace) {
+      debugPrint('Unable to select a file for the WebView: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      return const [];
     }
   }
 
