@@ -5,26 +5,43 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sunsenz/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(SunsenzServeApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
+  const packageInfoChannel = MethodChannel(
+    'dev.fluttercommunity.plus/package_info',
+  );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(packageInfoChannel, (call) async {
+          if (call.method != 'getAll') return null;
+          return <String, dynamic>{
+            'appName': 'Sunsenz',
+            'buildNumber': '1',
+            'packageName': 'in.sunsenz.service',
+            'version': '1.0.0',
+          };
+        });
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(packageInfoChannel, null);
+  });
+
+  testWidgets('shows splash screen when app starts', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const SunsenzServeApp());
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.byType(SplashScreen), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }
