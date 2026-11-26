@@ -4,10 +4,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 import 'package:file_selector/file_selector.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:new_version_plus/new_version_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+
+const _mediaCaptureChannel = MethodChannel('com.sunsenz.service/media_capture');
 
 void main() {
   runApp(const SunsenzServeApp());
@@ -193,52 +194,71 @@ class _HomeScreenState extends State<HomeScreen> {
     final acceptedTypes = params.acceptTypes
         .map((type) => type.toLowerCase().trim())
         .toList();
+    final imageExtensionPattern = RegExp(
+      r'^\.(jpe?g|png|gif|webp|heic|heif|bmp|tiff?)$',
+    );
+    final videoExtensionPattern = RegExp(r'^\.(mp4|m4v|mov|avi|mkv|webm|3gp)$');
     final acceptsImages = acceptedTypes.any(
       (type) =>
-          type.startsWith('image/') ||
-          RegExp(r'\.(jpe?g|png|gif|webp|heic|heif|bmp|tiff?)$').hasMatch(type),
+          type.startsWith('image/') || imageExtensionPattern.hasMatch(type),
     );
     final acceptsVideos = acceptedTypes.any(
       (type) =>
-          type.startsWith('video/') ||
-          RegExp(r'\.(mp4|m4v|mov|avi|mkv|webm|3gp)$').hasMatch(type),
+          type.startsWith('video/') || videoExtensionPattern.hasMatch(type),
     );
-    final picker = ImagePicker();
 
     try {
-      if (acceptsImages && acceptsVideos) {
-        if (params.mode == FileSelectorMode.openMultiple) {
-          final files = await picker.pickMultipleMedia();
-          return files.map((file) => file.path).toList();
-        }
-        final file = await picker.pickMedia();
-        return file == null ? const [] : [file.path];
-      }
-
-      if (acceptsImages) {
-        if (params.isCaptureEnabled) {
-          final file = await picker.pickImage(source: ImageSource.camera);
-          return file == null ? const [] : [file.path];
-        }
-        if (params.mode == FileSelectorMode.openMultiple) {
-          final files = await picker.pickMultiImage();
-          return files.map((file) => file.path).toList();
-        }
-        final file = await picker.pickImage(source: ImageSource.gallery);
-        return file == null ? const [] : [file.path];
-      }
-
-      if (acceptsVideos) {
-        if (params.mode == FileSelectorMode.openMultiple &&
-            !params.isCaptureEnabled) {
-          final files = await picker.pickMultiVideo();
-          return files.map((file) => file.path).toList();
-        }
-        final file = await picker.pickVideo(
-          source: params.isCaptureEnabled
-              ? ImageSource.camera
-              : ImageSource.gallery,
+      if (params.isCaptureEnabled && acceptsImages != acceptsVideos) {
+        final file = await _mediaCaptureChannel.invokeMethod<String>(
+          'capture',
+          {'type': acceptsImages ? 'image' : 'video'},
         );
+        return file == null ? const [] : [file];
+      }
+
+      if (acceptsImages || acceptsVideos) {
+        final mimeTypes = acceptedTypes
+            .where(
+              (type) =>
+                  (acceptsImages && type.startsWith('image/')) ||
+                  (acceptsVideos && type.startsWith('video/')),
+            )
+            .toSet();
+        final extensions = acceptedTypes
+            .where(
+              (type) =>
+                  (acceptsImages && imageExtensionPattern.hasMatch(type)) ||
+                  (acceptsVideos && videoExtensionPattern.hasMatch(type)),
+            )
+            .map((type) => type.substring(1))
+            .toSet();
+        if (acceptsImages &&
+            !mimeTypes.any((type) => type.startsWith('image/')) &&
+            !extensions.any(
+              (type) => imageExtensionPattern.hasMatch('.$type'),
+            )) {
+          mimeTypes.add('image/*');
+        }
+        if (acceptsVideos &&
+            !mimeTypes.any((type) => type.startsWith('video/')) &&
+            !extensions.any(
+              (type) => videoExtensionPattern.hasMatch('.$type'),
+            )) {
+          mimeTypes.add('video/*');
+        }
+
+        final mediaTypes = <XTypeGroup>[
+          XTypeGroup(
+            label: 'Media',
+            mimeTypes: mimeTypes.toList(),
+            extensions: extensions.toList(),
+          ),
+        ];
+        if (params.mode == FileSelectorMode.openMultiple) {
+          final files = await openFiles(acceptedTypeGroups: mediaTypes);
+          return files.map((file) => file.path).toList();
+        }
+        final file = await openFile(acceptedTypeGroups: mediaTypes);
         return file == null ? const [] : [file.path];
       }
 
